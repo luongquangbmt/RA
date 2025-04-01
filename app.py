@@ -44,7 +44,7 @@ Use a formal academic tone, concise structure, and JBR formatting conventions.
 """
             try:
                 response = client.chat.completions.create(
-                    model="gpt-4",
+                    model="gpt-4o",
                     messages=[
                         {"role": "system", "content": "You are a writing assistant specialized in academic business research."},
                         {"role": "user", "content": prompt}
