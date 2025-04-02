@@ -1,6 +1,5 @@
 import streamlit as st
 from langgraph_flow import research_graph, ResearchState
-from utils.model_config import HF_MODEL_NAME, HF_TOKEN
 
 st.title("🔁 LangGraph Research Flow Runner")
 st.markdown("This runs the full agent workflow: Idea → LitReview → Structure → Writing → Refine → Export")

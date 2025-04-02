@@ -1,17 +1,6 @@
-# langgraph_flow.py
-
 from langgraph.graph import StateGraph, END
 from typing import TypedDict
-from huggingface_hub import InferenceClient
-from utils.model_config import HF_MODEL_NAME, HF_TOKEN, switch_to_next_model
-
-def get_inference_client():
-    from huggingface_hub import InferenceClient
-    try:
-        return get_inference_client()
-    except Exception as e:
-        switch_to_next_model()
-        return get_inference_client()
+from utils.model_utils import call_llm
 
 # === Shared memory for the graph ===
 class ResearchState(TypedDict):
@@ -22,45 +11,96 @@ class ResearchState(TypedDict):
     drafts: dict
     final: str
 
-# === Initialize Hugging Face client ===
-hf_token = "your_token_here"  # Replace with secure loading if needed
-client = get_inference_client()
-
 # === Step functions representing each agent ===
 def idea_agent(state: ResearchState) -> ResearchState:
     topic = state.get("topic", "")
-    idea = f"Brainstormed research idea based on: {topic}"
+    prompt = f"""You are an academic research assistant helping to define a research project.
+
+Based on the topic: "{topic}", generate the following:
+- 2–3 possible research questions
+- Suggested theoretical frameworks or perspectives
+- Possible hypotheses or relationships
+- Key concepts or variables involved
+- Potential academic or practical contributions
+
+Use clear, formal language.
+"""
+    idea = call_llm(prompt).strip()
     return {**state, "idea": idea}
 
 def lit_review_agent(state: ResearchState) -> ResearchState:
     topic = state.get("topic", "")
-    prompt = f"You are an academic assistant. Summarize the current literature relevant to the topic: '{topic}' in 5–7 sentences."
-    result = client.text_generation(prompt=prompt, max_new_tokens=500, temperature=0.6)
-    summary = result.strip()
-    return {**state, "lit_review": summary}
+    prompt = f"""You are an academic assistant. Summarize the current literature relevant to the topic: '{topic}' in 5–7 sentences."""
+    lit_review = call_llm(prompt).strip()
+    return {**state, "lit_review": lit_review}
 
 def structure_agent(state: ResearchState) -> ResearchState:
     idea = state.get("idea", "")
-    lit = state.get("lit_review", "")
-    structure = f"Generated structure based on idea: {idea} and lit review: {lit}"
+    lit_review = state.get("lit_review", "")
+    prompt = f"""Based on the following research idea and literature review, develop a detailed outline for a research paper.
+
+Research Idea:
+{idea}
+
+Literature Review:
+{lit_review}
+
+The outline should include:
+1. Introduction
+2. Literature Review
+3. Methodology
+4. Results
+5. Discussion
+6. Conclusion
+
+For each section, provide key points or subheadings that should be addressed.
+
+Use clear, formal language.
+"""
+    structure = call_llm(prompt).strip()
     return {**state, "structure": structure}
 
 def writing_agent(state: ResearchState) -> ResearchState:
     structure = state.get("structure", "")
-    lit = state.get("lit_review", "")
-    drafts = {
-        "Introduction": f"Introduction using structure: {structure} and lit review: {lit}",
-        "Methodology": f"Methodology based on structure: {structure}"
-    }
+    lit_review = state.get("lit_review", "")
+    drafts = {}
+    sections = ["Introduction", "Literature Review", "Methodology", "Results", "Discussion", "Conclusion"]
+    for section in sections:
+        prompt = f"""You are an academic research assistant tasked with drafting the '{section}' section of a research paper.
+
+Based on the following structure and literature review:
+
+Structure:
+{structure}
+
+Literature Review:
+{lit_review}
+
+Draft the '{section}' section with appropriate content and depth.
+
+Use formal academic language.
+"""
+        draft = call_llm(prompt).strip()
+        drafts[section] = draft
     return {**state, "drafts": drafts}
 
 def refine_agent(state: ResearchState) -> ResearchState:
     drafts = state.get("drafts", {})
-    refined = {k: v + " (refined)" for k, v in drafts.items()}
-    return {**state, "drafts": refined}
+    refined_drafts = {}
+    for section, content in drafts.items():
+        prompt = f"""You are an academic editor. Please refine the following draft of the '{section}' section to improve clarity, coherence, and academic rigor.
+
+Draft:
+{content}
+
+Provide the refined version below:
+"""
+        refined_draft = call_llm(prompt).strip()
+        refined_drafts[section] = refined_draft
+    return {**state, "drafts": refined_drafts}
 
 def export_agent(state: ResearchState) -> ResearchState:
-    final_text = "\n".join([f"{k}: {v}" for k, v in state["drafts"].items()])
+    final_text = "\n\n".join([f"{section}\n{content}" for section, content in state["drafts"].items()])
     return {**state, "final": final_text}
 
 # === Build LangGraph ===

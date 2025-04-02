@@ -15,4 +15,5 @@ llama-index-embeddings-huggingface
 
 langgraph
 
+watchdog
 

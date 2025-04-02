@@ -8,15 +8,13 @@ if "LLM_INDEX" not in st.session_state:
 # List of LLM providers (free + open access APIs)
 LLM_PROVIDERS = [
     {
-        "name": "OpenRouter",
-        "base_url": "https://openrouter.ai/api/v1",
+        "name": "Groq",
+        "base_url": "https://api.groq.com/openai/v1",
         "headers": lambda token: {
-            "Authorization": f"Bearer {token}",
-            "HTTP-Referer": "https://yourapp.com",
-            "X-Title": "Multi-Agent Research Assistant"
+            "Authorization": f"Bearer {token}"
         },
-        "token": st.secrets.get("OPENROUTER_API_KEY", ""),
-        "model": "huggingfaceh4/zephyr-7b-beta"
+        "token": st.secrets.get("GROQ_API_KEY", ""),
+        "model": "llama-3.2-90b-vision-preview"
     },
     {
         "name": "Groq",
@@ -26,6 +24,26 @@ LLM_PROVIDERS = [
         },
         "token": st.secrets.get("GROQ_API_KEY", ""),
         "model": "llama-3.3-70b-versatile"
+    },
+    {
+        "name": "Groq",
+        "base_url": "https://api.groq.com/openai/v1",
+        "headers": lambda token: {
+            "Authorization": f"Bearer {token}"
+        },
+        "token": st.secrets.get("GROQ_API_KEY", ""),
+        "model": "deepseek-r1-distill-llama-70b"
+    },
+    {
+        "name": "OpenRouter",
+        "base_url": "https://openrouter.ai/api/v1",
+        "headers": lambda token: {
+            "Authorization": f"Bearer {token}",
+            "HTTP-Referer": "https://yourapp.com",
+            "X-Title": "Multi-Agent Research Assistant"
+        },
+        "token": st.secrets.get("OPENROUTER_API_KEY", ""),
+        "model": "huggingfaceh4/zephyr-7b-beta"
     },
     {
         "name": "TogetherAI",

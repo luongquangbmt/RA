@@ -1,77 +1,48 @@
 from utils.model_utils import call_llm
 import streamlit as st
-from utils.model_config import HF_MODEL_NAME, HF_TOKEN, switch_to_next_model
-
-def get_inference_client():
-    try:
-        return get_inference_client()
-    except Exception as e:
-        switch_to_next_model()
-        return get_inference_client()
-
-# Hugging Face setup
-hf_token = st.secrets["HF_TOKEN"]
-client = get_inference_client()
 
 st.title("🏗️ Structure Agent")
-st.markdown("Design your paper’s structure based on your research idea.")
+st.markdown("Develop a structured outline for your research paper.")
 
-# Show saved research idea
-if "research_idea" in st.session_state:
-    st.markdown("#### 🎯 Current Research Topic")
-    st.info(st.session_state.research_idea.get("topic", ""))
-else:
-    st.warning("You haven't defined a research idea yet. Use the IdeaAgent first.")
+# Ensure a research idea exists in session state
+if "research_idea" not in st.session_state or not st.session_state.research_idea.get("output"):
+    st.warning("Please generate and save a research idea using the Idea Agent first.")
     st.stop()
 
-# Outline section goals
-st.markdown("### 📄 Standard JBR Structure")
-section_goals = {
-    "Abstract": "Summarize the research problem, method, findings, and contribution.",
-    "Introduction": "Introduce the research context, problem, importance, and overview.",
-    "Literature Review": "Situate the research in past work, define key terms and gaps.",
-    "Hypotheses/Framework": "Present theory, conceptual model, and hypotheses.",
-    "Methodology": "Describe sample, variables, research design, and data collection.",
-    "Results": "Report findings, analysis, tests of hypotheses.",
-    "Discussion": "Interpret results, implications, limitations, future work.",
-    "Conclusion": "Wrap up, restate contributions, and suggest broader impacts."
-}
+# Display current research idea
+st.markdown("### 📝 Current Research Idea")
+st.text_area("Research Idea:", value=st.session_state.research_idea["output"], height=150, disabled=True)
 
-# User triggers AI-generated outline
-if st.button("📐 Generate Section-by-Section Plan"):
-    with st.spinner("Designing structure..."):
-        topic = st.session_state.research_idea["topic"]
-        summary = st.session_state.research_idea["output"]
-        prompt = f"""You are an assistant helping outline a Journal of Business Research article.
+# Generate structure
+if st.button("📑 Generate Structure"):
+    with st.spinner("Organizing the paper structure..."):
+        prompt = f"""You are an academic research assistant tasked with structuring a research paper.
 
-Research Topic: {topic}
+Based on the following research idea:
 
-Research Summary:
-{summary}
+{st.session_state.research_idea["output"]}
 
-For each section below, write a short paragraph (2–4 sentences) describing what the author should write based on the topic.
+Develop a detailed outline for the paper, including:
+1. Introduction
+2. Literature Review
+3. Methodology
+4. Results
+5. Discussion
+6. Conclusion
 
-Sections:
-- Abstract
-- Introduction
-- Literature Review
-- Hypotheses/Framework
-- Methodology
-- Results
-- Discussion
-- Conclusion
+For each section, provide key points or subheadings that should be addressed.
 
-Use formal, clear language for academic planning.
+Use clear, formal language.
 """
         try:
-            response = call_llm(prompt, max_new_tokens=800, temperature=0.6)
-            st.session_state.structure_plan = response.strip()
-            st.markdown("### ✨ Generated Section Plan")
-            st.text_area("You can revise the outline here:", value=st.session_state.structure_plan, height=400)
+            response = call_llm(prompt).strip()
+            st.session_state.structure_plan = response
+            st.markdown("### 🏗️ Generated Paper Structure")
+            st.text_area("Edit below if needed:", value=response, height=400, key="structure_text")
         except Exception as e:
             st.error(f"Error: {e}")
 
-# Export structure to session
+# Save to session
 if st.session_state.get("structure_plan"):
-    if st.button("✅ Save Plan to Session"):
-        st.success("Structure plan saved for other agents.")
+    if st.button("✅ Save Structure Plan"):
+        st.success("Structure plan saved.")

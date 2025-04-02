@@ -1,81 +1,47 @@
 from utils.model_utils import call_llm
 import streamlit as st
-import re
-from utils.model_config import HF_MODEL_NAME, HF_TOKEN, switch_to_next_model
-
-def get_inference_client():
-    try:
-        return get_inference_client()
-    except Exception as e:
-        switch_to_next_model()
-        return get_inference_client()
-
-# Hugging Face setup
-hf_token = st.secrets["HF_TOKEN"]
-client = get_inference_client()
 
 st.title("✍️ Writing Agent")
-st.markdown("Generate and edit your paper section by section using JBR style.")
+st.markdown("Draft sections of your research paper based on the structured outline.")
 
-# Section list
-sections = [
-    "Abstract", "Introduction", "Literature Review",
-    "Hypotheses/Framework", "Methodology", "Results",
-    "Discussion", "Conclusion"
-]
+# Ensure a structure plan exists in session state
+if "structure_plan" not in st.session_state or not st.session_state.structure_plan:
+    st.warning("Please generate and save a structure plan using the Structure Agent first.")
+    st.stop()
 
-selected_section = st.selectbox("Choose the section to work on:", sections)
+# Display current structure plan
+st.markdown("### 🏗️ Current Structure Plan")
+st.text_area("Structure Plan:", value=st.session_state.structure_plan, height=150, disabled=True)
 
-# Init session storage for drafts
+# Initialize drafts in session state if not present
 if "drafts" not in st.session_state:
-    st.session_state.drafts = {section: "" for section in sections}
+    st.session_state.drafts = {}
 
-# 🧠 Load structure-based notes from StructureAgent
-structure_notes = ""
-if "structure_plan" in st.session_state:
-    pattern = rf"{selected_section}[\s\S]*?(?=\n[A-Z][a-z]+:|\Z)"
-    match = re.search(pattern, st.session_state.structure_plan, re.IGNORECASE)
-    if match:
-        structure_notes = match.group(0).strip()
-        st.markdown("💡 **Plan from StructureAgent:**")
-        st.info(structure_notes)
+# Generate drafts for each section
+sections = ["Introduction", "Literature Review", "Methodology", "Results", "Discussion", "Conclusion"]
 
-# Editable notes box
-notes = st.text_area(
-    label="Add your own notes or modify the suggestion below:",
-    value=structure_notes,
-    height=150
-)
+for section in sections:
+    if st.button(f"📝 Draft {section}"):
+        with st.spinner(f"Writing the {section} section..."):
+            prompt = f"""You are an academic research assistant tasked with drafting the '{section}' section of a research paper.
 
-# Hugging Face generation
-def generate_draft(prompt):
-    return call_llm(
-        prompt=prompt,
-        max_new_tokens=500,
-        temperature=0.7,
-        stop_sequences=["###"]
-    )
+Based on the following structure plan:
 
-# Generate button
-if st.button("🧠 Generate Draft with AI"):
-    with st.spinner("Generating..."):
-        full_prompt = f"""You are a research assistant helping write the {selected_section} section of a Journal of Business Research article.
+{st.session_state.structure_plan}
 
-Instructions: Write in a formal, structured academic tone suitable for peer-reviewed publication. Be concise and conceptually sound.
+Draft the '{section}' section with appropriate content and depth.
 
-User Notes:
-{notes}
-
-Write the section below:
+Use formal academic language.
 """
-        output = generate_draft(full_prompt).strip()
-        st.session_state.drafts[selected_section] = output
-        st.success(f"{selected_section} draft updated.")
+            try:
+                response = call_llm(prompt).strip()
+                st.session_state.drafts[section] = response
+                st.markdown(f"### ✍️ Drafted {section} Section")
+                st.text_area(f"{section} Section:", value=response, height=400, key=f"{section}_text")
+            except Exception as e:
+                st.error(f"Error: {e}")
 
-# Edit the draft
-st.text_area(
-    label=f"📝 Edit your {selected_section} draft below:",
-    value=st.session_state.drafts[selected_section],
-    height=300,
-    key=f"{selected_section}_edit"
-)
+# Save drafts to session
+if st.session_state.get("drafts"):
+    if st.button("✅ Save Drafts"):
+        st.success("Drafts saved.")
