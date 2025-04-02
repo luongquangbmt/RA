@@ -46,4 +46,39 @@ def generate_docx(content, section_title):
         doc.add_paragraph(paragraph.strip())
 
     buffer = BytesIO()
-    doc.save(buffer
+    doc.save(buffer)
+    buffer.seek(0)
+    return buffer
+
+# Generate + export
+if st.button("✍️ Generate Draft"):
+    if not user_input.strip():
+        st.warning("Please describe your topic.")
+    else:
+        with st.spinner("Generating using Hugging Face..."):
+            full_prompt = f"""### Instruction:
+You are a writing assistant specialized in academic business writing. Write the '{section}' section of a Journal of Business Research article in formal academic tone.
+
+### Topic:
+{user_input}
+
+### Response:
+"""
+            try:
+                output = generate_with_hf(full_prompt).strip()
+                st.markdown("### ✨ Draft Output:")
+                draft = st.text_area("Edit your draft below:", value=output, height=300, key="editable_draft")
+
+                if st.button("📥 Download as Word (.docx)"):
+                    docx_file = generate_docx(draft, section)
+                    st.download_button(
+                        label="Download .docx",
+                        data=docx_file,
+                        file_name=f"{section.lower().replace(' ', '_')}_draft.docx",
+                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    )
+
+                st.success("Draft generated using Mistral on Hugging Face!")
+
+            except Exception as e:
+                st.error(f"Something went wrong: {e}")
