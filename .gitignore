@@ -1,0 +1,44 @@
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pkl
+*.pickle
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# IDE settings
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Streamlit secrets
+.streamlit/secrets.toml
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Output artifacts
+*.log
+*.zip
+*.pdf
+*.docx
+*.html
+*.db
+*.sqlite
+*.egg-info/
+dist/
+build/
+
+# Hugging Face cache
+~/.cache/huggingface
+huggingface_cache/
+
+# Test & export files
+test_client.py
