@@ -1,27 +1,28 @@
 import streamlit as st
 from huggingface_hub import InferenceClient
-from weasyprint import HTML
+from docx import Document
+from docx.shared import Pt
 import tempfile
 
-# Set Streamlit page config
+# Streamlit page config
 st.set_page_config(page_title="JBR Writing Assistant", layout="wide")
 
-# Hugging Face model setup
+# Hugging Face API setup
 hf_token = st.secrets["HF_TOKEN"]
 client = InferenceClient(model="mistralai/Mistral-7B-Instruct-v0.1", token=hf_token)
 
-# Sections typically found in a Journal of Business Research paper
+# Available sections
 sections = [
     "Abstract", "Introduction", "Literature Review",
     "Hypotheses/Framework", "Methodology", "Results", "Discussion", "Conclusion"
 ]
 
-# Streamlit UI
-st.title("📄 JBR Writing Assistant – With Hugging Face & PDF Export")
+# UI
+st.title("📄 JBR Writing Assistant – Now with DOCX Export")
 section = st.selectbox("Select the section you want to generate:", sections)
 user_input = st.text_area("Describe your research topic, question, or notes:", height=200)
 
-# Hugging Face generation function
+# Hugging Face inference
 def generate_with_hf(prompt):
     return client.text_generation(
         prompt=prompt,
@@ -30,43 +31,23 @@ def generate_with_hf(prompt):
         stop_sequences=["###"]
     )
 
-# WeasyPrint PDF generator
-def generate_pdf_weasy(content, section_title):
-    html = f"""
-    <html>
-    <head>
-        <style>
-            body {{
-                font-family: 'Times New Roman', serif;
-                font-size: 12pt;
-                line-height: 1.5;
-                margin: 1.25in;
-            }}
-            h1 {{
-                text-align: center;
-                font-size: 16pt;
-                font-weight: bold;
-            }}
-            h2 {{
-                font-size: 14pt;
-                font-weight: bold;
-                margin-top: 30px;
-            }}
-            p {{
-                text-align: justify;
-            }}
-        </style>
-    </head>
-    <body>
-        <h1>Journal of Business Research Style Draft</h1>
-        <h2>{section_title}</h2>
-        <p>{content.replace('\n', '<br><br>')}</p>
-    </body>
-    </html>
-    """
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as f:
-        HTML(string=html).write_pdf(f.name)
-        return f.name
+# DOCX generator
+def generate_docx(content, section_title):
+    doc = Document()
+    style = doc.styles["Normal"]
+    font = style.font
+    font.name = "Times New Roman"
+    font.size = Pt(12)
+
+    doc.add_heading("Journal of Business Research Style Draft", 0)
+    doc.add_heading(section_title, level=1)
+
+    for paragraph in content.strip().split("\n\n"):
+        doc.add_paragraph(paragraph.strip())
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".docx") as tmp:
+        doc.save(tmp.name)
+        return tmp.name
 
 # Generation logic
 if st.button("✍️ Generate Draft"):
@@ -87,15 +68,15 @@ You are a writing assistant specialized in academic business writing. Write the 
                 st.markdown("### ✨ Draft Output:")
                 draft = st.text_area("Edit your draft below:", value=output, height=300, key="editable_draft")
 
-                # PDF export logic
-                if st.button("📥 Download as PDF"):
-                    pdf_path = generate_pdf_weasy(draft, section)
-                    with open(pdf_path, "rb") as f:
+                # DOCX Export
+                if st.button("📥 Download as Word (.docx)"):
+                    docx_path = generate_docx(draft, section)
+                    with open(docx_path, "rb") as f:
                         st.download_button(
-                            label="Download PDF",
+                            label="Download .docx",
                             data=f,
-                            file_name=f"{section.lower().replace(' ', '_')}_draft.pdf",
-                            mime="application/pdf"
+                            file_name=f"{section.lower().replace(' ', '_')}_draft.docx",
+                            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                         )
 
                 st.success("Draft generated using Mistral on Hugging Face!")
