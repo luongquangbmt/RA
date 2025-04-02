@@ -1,9 +1,8 @@
+from utils.model_utils import call_llm
 import streamlit as st
-from huggingface_hub import InferenceClient
 from utils.model_config import HF_MODEL_NAME, HF_TOKEN, switch_to_next_model
 
 def get_inference_client():
-    from huggingface_hub import InferenceClient
     try:
         return get_inference_client()
     except Exception as e:
@@ -65,7 +64,7 @@ Sections:
 Use formal, clear language for academic planning.
 """
         try:
-            response = client.text_generation(prompt, max_new_tokens=800, temperature=0.6)
+            response = call_llm(prompt, max_new_tokens=800, temperature=0.6)
             st.session_state.structure_plan = response.strip()
             st.markdown("### ✨ Generated Section Plan")
             st.text_area("You can revise the outline here:", value=st.session_state.structure_plan, height=400)

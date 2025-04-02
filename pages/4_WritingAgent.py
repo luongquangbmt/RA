@@ -1,10 +1,9 @@
+from utils.model_utils import call_llm
 import streamlit as st
-from huggingface_hub import InferenceClient
 import re
 from utils.model_config import HF_MODEL_NAME, HF_TOKEN, switch_to_next_model
 
 def get_inference_client():
-    from huggingface_hub import InferenceClient
     try:
         return get_inference_client()
     except Exception as e:
@@ -50,7 +49,7 @@ notes = st.text_area(
 
 # Hugging Face generation
 def generate_draft(prompt):
-    return client.text_generation(
+    return call_llm(
         prompt=prompt,
         max_new_tokens=500,
         temperature=0.7,

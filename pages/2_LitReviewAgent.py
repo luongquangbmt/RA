@@ -1,5 +1,5 @@
+from utils.model_utils import call_llm
 import streamlit as st
-from huggingface_hub import InferenceClient
 import fitz  # PyMuPDF
 import tempfile
 from llama_index.core import SimpleDirectoryReader, VectorStoreIndex, ServiceContext
@@ -10,7 +10,6 @@ from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from utils.model_config import HF_MODEL_NAME, HF_TOKEN, switch_to_next_model
 
 def get_inference_client():
-    from huggingface_hub import InferenceClient
     try:
         return get_inference_client()
     except Exception as e:
@@ -90,7 +89,7 @@ if st.session_state.lit_entries:
 Summaries:
 {summaries}
 """
-        result = client.text_generation(prompt, max_new_tokens=800, temperature=0.7)
+        result = call_llm(prompt, max_new_tokens=800, temperature=0.7)
         st.text_area("📄 Synthesized Paragraph", value=result.strip(), height=300)
         if st.button("✅ Save to WritingAgent"):
             st.session_state.drafts["Literature Review"] = result.strip()

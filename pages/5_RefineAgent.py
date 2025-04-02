@@ -1,9 +1,8 @@
+from utils.model_utils import call_llm
 import streamlit as st
-from huggingface_hub import InferenceClient
 from utils.model_config import HF_MODEL_NAME, HF_TOKEN, switch_to_next_model
 
 def get_inference_client():
-    from huggingface_hub import InferenceClient
     try:
         return get_inference_client()
     except Exception as e:
@@ -62,7 +61,7 @@ if st.button("🔁 Refine Section"):
     with st.spinner("Refining..."):
         try:
             prompt = build_prompt(mode, original_text)
-            result = client.text_generation(prompt, max_new_tokens=600, temperature=0.5)
+            result = call_llm(prompt, max_new_tokens=600, temperature=0.5)
             refined_text = result.strip()
             st.text_area("🔍 Refined version:", value=refined_text, height=300, key="refined_output")
 

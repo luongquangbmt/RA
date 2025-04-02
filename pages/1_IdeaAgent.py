@@ -1,18 +1,5 @@
+from utils.model_utils import call_llm
 import streamlit as st
-from huggingface_hub import InferenceClient
-from utils.model_config import HF_MODEL_NAME, HF_TOKEN, switch_to_next_model
-
-def get_inference_client():
-    from huggingface_hub import InferenceClient
-    try:
-        return get_inference_client()
-    except Exception as e:
-        switch_to_next_model()
-        return get_inference_client()
-
-# Setup
-hf_token = st.secrets["HF_TOKEN"]
-client = get_inference_client()
 
 st.title("🧠 Idea Agent")
 st.markdown("Brainstorm your research question, theoretical framework, and contribution idea.")
@@ -40,7 +27,7 @@ Based on the topic: "{topic}", generate the following:
 Use clear, formal language.
 """
         try:
-            response = client.text_generation(prompt, max_new_tokens=600, temperature=0.7).strip()
+            response = call_llm(prompt).strip()
             st.session_state.research_idea["topic"] = topic
             st.session_state.research_idea["output"] = response
             st.markdown("### 🧩 Generated Research Directions:")
