@@ -111,10 +111,17 @@ def generate_full_docx(title, author, sections_dict):
         for para in content.strip().split("\n\n"):
             doc.add_paragraph(para.strip())
 
+    # Add references at the end
+    if st.session_state.references:
+        doc.add_heading("References", level=1)
+        for ref in st.session_state.references:
+            doc.add_paragraph(ref)
+
     file = BytesIO()
     doc.save(file)
     file.seek(0)
     return file
+
 
 # Export full paper
 if st.button("📥 Download Full Paper (.docx)"):
