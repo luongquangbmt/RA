@@ -1,10 +1,19 @@
 import streamlit as st
 from huggingface_hub import InferenceClient
 import re
+from utils.model_config import HF_MODEL_NAME, HF_TOKEN, switch_to_next_model
+
+def get_inference_client():
+    from huggingface_hub import InferenceClient
+    try:
+        return get_inference_client()
+    except Exception as e:
+        switch_to_next_model()
+        return get_inference_client()
 
 # Hugging Face setup
 hf_token = st.secrets["HF_TOKEN"]
-client = InferenceClient(model="mistralai/Mistral-7B-Instruct-v0.1", token=hf_token)
+client = get_inference_client()
 
 st.title("✍️ Writing Agent")
 st.markdown("Generate and edit your paper section by section using JBR style.")

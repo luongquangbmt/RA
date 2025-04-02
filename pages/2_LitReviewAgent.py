@@ -7,13 +7,22 @@ from llama_index.core import SimpleDirectoryReader, VectorStoreIndex, ServiceCon
 #from llama_index.embeddings import HuggingFaceEmbedding
 from llama_index.llms.huggingface import HuggingFaceLLM
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+from utils.model_config import HF_MODEL_NAME, HF_TOKEN, switch_to_next_model
+
+def get_inference_client():
+    from huggingface_hub import InferenceClient
+    try:
+        return get_inference_client()
+    except Exception as e:
+        switch_to_next_model()
+        return get_inference_client()
 
 
 st.title("📚 LitReview Agent (RAG Enhanced)")
 st.markdown("Paste a paper link or upload a PDF — we’ll summarize and synthesize it.")
 
 hf_token = st.secrets["HF_TOKEN"]
-client = InferenceClient(model="mistralai/Mistral-7B-Instruct-v0.1", token=hf_token)
+#client = get_inference_client()
 
 if "lit_entries" not in st.session_state:
     st.session_state.lit_entries = []
@@ -43,8 +52,13 @@ if uploaded_file:
 
         # Define the LLM + embedding
         service_context = ServiceContext.from_defaults(
-            llm=HuggingFaceLLM(model_name="mistralai/Mistral-7B-Instruct-v0.1", tokenizer_name="mistralai/Mistral-7B-Instruct-v0.1", context_window=2048),
-            embed_model=HuggingFaceEmbedding(model_name="BAAI/bge-small-en-v1.5")
+            #llm=HuggingFaceLLM(model_name="mistralai/Mistral-7B-Instruct-v0.1", tokenizer_name="mistralai/Mistral-7B-Instruct-v0.1", context_window=2048),
+            #embed_model=HuggingFaceEmbedding(model_name="BAAI/bge-small-en-v1.5")
+            llm = HuggingFaceLLM(
+                model_name="HuggingFaceH4/zephyr-7b-beta",
+                tokenizer_name="HuggingFaceH4/zephyr-7b-beta",
+                context_window=2048,
+            )
         )
 
         index = VectorStoreIndex.from_documents(documents, service_context=service_context)

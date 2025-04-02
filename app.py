@@ -3,6 +3,15 @@ from huggingface_hub import InferenceClient
 from docx import Document
 from docx.shared import Pt
 from io import BytesIO
+from utils.model_config import HF_MODEL_NAME, HF_TOKEN, switch_to_next_model
+
+def get_inference_client():
+    from huggingface_hub import InferenceClient
+    try:
+        return get_inference_client()
+    except Exception as e:
+        switch_to_next_model()
+        return get_inference_client()
 
 # Streamlit page config
 st.set_page_config(page_title="JBR Multi-Section Assistant", layout="wide")
@@ -23,7 +32,9 @@ Use the sidebar to explore agents.
 
 # Hugging Face API setup
 hf_token = st.secrets["HF_TOKEN"]
-client = InferenceClient(model="mistralai/Mistral-7B-Instruct-v0.1", token=hf_token)
+#client = get_inference_client()
+client = get_inference_client()
+
 
 # Define sections
 sections = [
