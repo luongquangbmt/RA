@@ -7,6 +7,20 @@ from io import BytesIO
 # Streamlit page config
 st.set_page_config(page_title="JBR Multi-Section Assistant", layout="wide")
 
+st.title("🧠 Multi-Agent Research Assistant")
+st.markdown("""
+Welcome to your AI-powered writing companion for academic research.
+
+**Features:**
+- Research idea generation
+- Literature review with RAG
+- Structured section-by-section writing
+- Hypothesis and conceptual modeling
+- In-app citations and docx export
+
+Use the sidebar to explore agents.
+""")
+
 # Hugging Face API setup
 hf_token = st.secrets["HF_TOKEN"]
 client = InferenceClient(model="mistralai/Mistral-7B-Instruct-v0.1", token=hf_token)
