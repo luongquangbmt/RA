@@ -25,6 +25,43 @@ author_name = st.text_input("Author name (optional):")
 # Section selection
 selected_section = st.selectbox("Choose a section to edit or generate:", sections)
 
+# --- Citation Builder ---
+st.markdown("---")
+st.markdown("### 📚 Citation Builder")
+
+# Initialize reference list
+if "references" not in st.session_state:
+    st.session_state.references = []
+
+with st.expander("Add a New Reference"):
+    author = st.text_input("Author(s):", key="author_input")
+    title = st.text_input("Title of the article:", key="title_input")
+    journal = st.text_input("Journal name:", key="journal_input")
+    year = st.text_input("Publication year:", key="year_input")
+    volume = st.text_input("Volume (optional):", key="volume_input")
+    pages = st.text_input("Pages (optional):", key="pages_input")
+
+    if st.button("➕ Add Reference"):
+        if author and title and journal and year:
+            citation = f"{author} ({year}). {title}. *{journal}*"
+            if volume:
+                citation += f", {volume}"
+            if pages:
+                citation += f", {pages}."
+            else:
+                citation += "."
+            st.session_state.references.append(citation)
+            st.success("Reference added.")
+        else:
+            st.error("Please fill in at least author, title, journal, and year.")
+
+# Show current reference list
+if st.session_state.references:
+    st.markdown("#### 📖 Current References:")
+    for i, ref in enumerate(st.session_state.references, start=1):
+        st.markdown(f"{i}. {ref}")
+
+
 # Initialize session state
 if "paper" not in st.session_state:
     st.session_state.paper = {section: "" for section in sections}
