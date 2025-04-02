@@ -4,3 +4,6 @@ streamlit
 huggingface_hub
 #weasyprint
 python-docx
+plotly
+pymupdf
+llama-index
