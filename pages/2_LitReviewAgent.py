@@ -1,43 +1,85 @@
-from utils.model_utils import call_llm
 import streamlit as st
+from utils.model_utils import call_llm
+import fitz
+import os
+import tempfile
+from transformers import AutoTokenizer, AutoModelForCausalLM
+from llama_index.core import (
+    Settings, VectorStoreIndex, SimpleDirectoryReader,
+    StorageContext, load_index_from_storage
+)
+from llama_index.llms.huggingface import HuggingFaceLLM
+from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 
-st.title("📚 Literature Review Agent")
-st.markdown("Generate a literature review based on your research idea.")
+st.title("📚 Literature Review Agent (Detailed Summary Mode)")
 
-# Ensure a research idea exists in session state
-if "research_idea" not in st.session_state or not st.session_state.research_idea.get("output"):
-    st.warning("Please generate and save a research idea using the Idea Agent first.")
+# === Email Context ===
+if "user_email" not in st.session_state or not st.session_state.user_email:
+    st.warning("Please return to the homepage and enter your email to start.")
     st.stop()
 
-# Display current research idea
-st.markdown("### 📝 Current Research Idea")
-st.text_area("Research Idea:", value=st.session_state.research_idea["output"], height=150, disabled=True)
+with st.sidebar:
+    st.markdown(f"👤 **Logged in as:** `{st.session_state.user_email}`")
+    if st.button("🔁 Log out / Reset"):
+        for key in list(st.session_state.keys()):
+            del st.session_state[key]
+        st.experimental_rerun()
 
-# Generate literature review
-if st.button("📖 Generate Literature Review"):
-    with st.spinner("Gathering relevant literature..."):
-        prompt = f"""You are an academic research assistant tasked with conducting a literature review.
+# === Per-user RAG storage ===
+username = st.session_state.user_email.split("@")[0].replace(".", "_")
+DATA_DIR = f"rag_storage/{username}/documents"
+INDEX_DIR = f"rag_storage/{username}/index"
+os.makedirs(DATA_DIR, exist_ok=True)
+os.makedirs(INDEX_DIR, exist_ok=True)
 
-Based on the following research idea:
+uploaded_files = st.file_uploader("📤 Upload PDF documents", type="pdf", accept_multiple_files=True)
 
-{st.session_state.research_idea["output"]}
+def extract_text_from_pdf(upload):
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+        tmp.write(upload.read())
+        tmp_path = tmp.name
+    text = ""
+    with fitz.open(tmp_path) as doc:
+        for page in doc:
+            text += page.get_text()
+    return text
 
-Perform the following tasks:
-1. Identify key themes and findings from recent studies related to the research idea.
-2. Highlight gaps or controversies in the existing literature.
-3. Suggest how these gaps can inform the current research.
+# === Detailed summary with structured academic prompt ===
+if uploaded_files:
+    for file in uploaded_files:
+        text = extract_text_from_pdf(file)
+        cleaned_text = text[:8000].replace("\n", " ").replace("\r", " ").strip()
 
-Use formal academic language and provide citations where appropriate.
+        detailed_prompt = f"""You are an academic research assistant. Carefully read the following excerpt from a research paper.
+Write a detailed, structured summary that would help a researcher understand the paper’s contributions without reading the full text.
+
+Your summary must include:
+- The main research question and why it matters
+- The theoretical background or motivation
+- Methodology: type of studies, number of participants, materials used
+- Key findings, including moderators and mediators
+- Practical implications for branding, marketing, or design
+- Contributions to existing academic literature
+
+Use a formal and concise academic tone suitable for a literature review section.
+Avoid generalities—focus on what was *actually* found and why it matters.
+
+Paper Text:
+{cleaned_text}
 """
-        try:
-            response = call_llm(prompt).strip()
-            st.session_state.lit_review = response
-            st.markdown("### 📄 Generated Literature Review")
-            st.text_area("Edit below if needed:", value=response, height=400, key="lit_review_text")
-        except Exception as e:
-            st.error(f"Error: {e}")
 
-# Save to session
-if st.session_state.get("lit_review"):
-    if st.button("✅ Save Literature Review"):
-        st.success("Literature review saved.")
+        response = call_llm(detailed_prompt)
+        st.text_area(f"🧾 Detailed Summary of {file.name}", value=response.strip(), height=400)
+
+        editable_summary = st.text_area(
+            f"✏️ Edit Summary for {file.name}",
+            value=response.strip(),
+            height=400,
+            key=f"editable_{file.name}"
+        )
+
+        if st.button(f"✅ Save '{file.name}' to Literature Review"):
+            if "drafts" not in st.session_state:
+                st.session_state.drafts = {}
+            st.session_state.drafts[f"Literature Review: {file.name}"] = editable_summary.strip()
+            st.success(f"Saved summary of '{file.name}' to your draft.")

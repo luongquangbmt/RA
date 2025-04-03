@@ -1,6 +1,18 @@
 from utils.model_utils import call_llm
 import streamlit as st
 
+
+# === Display user email and logout/reset ===
+if "user_email" not in st.session_state or not st.session_state.user_email:
+    st.warning("Please return to the homepage and enter your email to start.")
+    st.stop()
+
+with st.sidebar:
+    st.markdown(f"👤 **Logged in as:** `{st.session_state.user_email}`")
+    if st.button("🔁 Log out / Reset"):
+        for key in list(st.session_state.keys()):
+            del st.session_state[key]
+        st.experimental_rerun()
 st.title("🧠 Idea Agent")
 st.markdown("Brainstorm your research question, theoretical framework, and contribution idea.")
 

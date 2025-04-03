@@ -1,6 +1,18 @@
 import streamlit as st
 from langgraph_flow import research_graph, ResearchState
 
+
+# === Display user email and logout/reset ===
+if "user_email" not in st.session_state or not st.session_state.user_email:
+    st.warning("Please return to the homepage and enter your email to start.")
+    st.stop()
+
+with st.sidebar:
+    st.markdown(f"👤 **Logged in as:** `{st.session_state.user_email}`")
+    if st.button("🔁 Log out / Reset"):
+        for key in list(st.session_state.keys()):
+            del st.session_state[key]
+        st.experimental_rerun()
 st.title("🔁 LangGraph Research Flow Runner")
 st.markdown("This runs the full agent workflow: Idea → LitReview → Structure → Writing → Refine → Export")
 
